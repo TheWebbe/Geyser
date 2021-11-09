@@ -25,6 +25,10 @@
 
 package org.geysermc.connector.registry.type;
 
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -56,6 +60,8 @@ public class ItemMapping {
     String toolTier;
 
     String translationString;
+    Int2IntMap customModelData = new Int2IntOpenHashMap();
+    Int2ObjectMap<String> customModelData2BedrockIdentifier = new Int2ObjectOpenHashMap<>();
 
     /**
      * Gets if this item is a block.

@@ -39,6 +39,7 @@ import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.network.translators.ItemRemapper;
 import org.geysermc.connector.network.translators.chat.MessageTranslator;
 import org.geysermc.connector.registry.BlockRegistries;
+import org.geysermc.connector.registry.populator.ItemRegistryPopulator;
 import org.geysermc.connector.registry.type.ItemMapping;
 import org.geysermc.connector.registry.type.ItemMappings;
 import org.geysermc.connector.utils.FileUtils;
@@ -159,6 +160,7 @@ public abstract class ItemTranslator {
         ItemStack itemStack = new ItemStack(stack.getId(), stack.getAmount(), nbt);
 
         ItemData.Builder builder;
+
         ItemTranslator itemStackTranslator = ITEM_STACK_TRANSLATORS.get(bedrockItem.getJavaId());
         if (itemStackTranslator != null) {
             builder = itemStackTranslator.translateToBedrock(itemStack, bedrockItem, session.getItemMappings());
@@ -168,6 +170,8 @@ public abstract class ItemTranslator {
         if (bedrockItem.isBlock()) {
             builder.blockRuntimeId(bedrockItem.getBedrockBlockId());
         }
+
+        builder = translateCustomModelData(nbt, builder, bedrockItem);
 
         if (nbt != null) {
             // Translate the canDestroy and canPlaceOn Java NBT
@@ -227,6 +231,9 @@ public abstract class ItemTranslator {
         if (itemStack.getNbt() != null) {
             builder.tag(this.translateNbtToBedrock(itemStack.getNbt()));
         }
+        CompoundTag nbt = itemStack.getNbt();
+
+        builder = translateCustomModelData(nbt, builder, mapping);
         return builder;
     }
 
@@ -449,6 +456,21 @@ public abstract class ItemTranslator {
         }
 
         return tag;
+    }
+
+    /**
+     * Translates the custom model data of an item
+     */
+
+    public static ItemData.Builder translateCustomModelData(CompoundTag nbt, ItemData.Builder builder, ItemMapping mapping) {
+        if (nbt != null && nbt.get("CustomModelData") != null) {
+            int customModelData = ((IntTag) nbt.get("CustomModelData")).getValue();
+            if (mapping.getCustomModelData().containsKey(customModelData)) {
+                builder.id(mapping.getCustomModelData().get(customModelData));
+                builder.damage(0);
+            }
+        }
+        return builder;
     }
 
     /**

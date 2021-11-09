@@ -60,6 +60,7 @@ remote:
   # This is designed to be used for forced hosts on proxies
   forward-hostname: false
 
+
 # Allows the overworld world height to be extended from 0 - 255 to -64 - 319. This option cannot be changed during a reload.
 # Performance issues and/or additional bugs may occur for Bedrock clients as this is an experimental toggle on their end.
 extended-world-height: false
@@ -80,8 +81,8 @@ floodgate-key-file: key.pem
 #    password: javaccountpassword123 # Your Minecraft: Java Edition password
 #    microsoft-account: true # Whether the account is a Mojang or Microsoft account.
 #
-#  bluerkelp2: 
-#    email: not_really_my_email_address_mr_minecrafter53267@gmail.com 
+#  bluerkelp2:
+#    email: not_really_my_email_address_mr_minecrafter53267@gmail.com
 #    password: "this isn't really my password"
 #    microsoft-account: false
 
@@ -165,6 +166,10 @@ above-bedrock-nether-building: false
 # If set to false, it allows the user to connect to the server even if they don't
 # want to download the resource packs.
 force-resource-packs: true
+# Convert resource pack sent from java server or put in packs/java directory.
+convert-resource-pack: true
+# Should resource pack conversion process be logged into a file? Logs can be found in packs/resource_pack.log
+debug-resource-pack-conversion: false
 
 # Allows Xbox achievements to be unlocked.
 # THIS DISABLES ALL COMMANDS FROM SUCCESSFULLY RUNNING FOR BEDROCK IN-GAME, as otherwise Bedrock thinks you are cheating.

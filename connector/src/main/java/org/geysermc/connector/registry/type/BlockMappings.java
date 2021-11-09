@@ -29,10 +29,12 @@ import com.nukkitx.nbt.NbtList;
 import com.nukkitx.nbt.NbtMap;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.Builder;
 import lombok.Value;
 import org.geysermc.connector.network.translators.world.chunk.ChunkSection;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Builder
@@ -49,7 +51,8 @@ public class BlockMappings {
     int[] javaToBedrockBlocks;
 
     NbtList<NbtMap> bedrockBlockStates;
-
+    Object2IntMap<String> bedrockIdentifierToRuntimeId;
+    Map<String, NbtMap> bedrockIdentifierToNbt;
     /**
      * Contains a map of Java blocks to their respective Bedrock block tag, if the Java identifier is different from Bedrock.
      * Required to fix villager trades with these blocks.

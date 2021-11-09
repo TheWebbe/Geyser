@@ -136,12 +136,50 @@ public class FileUtils {
     /**
      * Writes the given data to the specified file on disk
      *
+     * @param file File to write to
+     * @param data Data to write to the file
+     * @throws IOException if the file failed to write
+     */
+    public static void writeFile(File file, String data) throws IOException {
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+
+        try (FileWriter writer = new FileWriter(file)) {
+            try (BufferedWriter bufferedWriter = new BufferedWriter(writer)) {
+                bufferedWriter.write(data);
+                bufferedWriter.flush();
+            }
+        }
+    }
+
+    /**
+     * Writes the given data to the specified file on disk
+     *
      * @param name File path to write to
      * @param data Data to write to the file
      * @throws IOException if the file failed to write
      */
     public static void writeFile(String name, char[] data) throws IOException {
         writeFile(new File(name), data);
+    }
+
+    /**
+     * Appends the given data to the specified file on disk
+     *
+     * @param file File to write to
+     * @param data Data to write to the file
+     * @throws IOException if the file failed to write
+     */
+    public static void appendFile(File file, String data) throws IOException {
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+
+        try (FileWriter writer = new FileWriter(file, true)) {
+            writer.write(data);
+            writer.flush();
+        }
     }
 
     /**
@@ -201,6 +239,9 @@ public class FileUtils {
      * @return The byte array of the file
      */
     public static byte[] readAllBytes(File file) {
+        if (!file.exists()) {
+            return new byte[]{};
+        }
         try (InputStream inputStream = new FileInputStream(file)) {
             return readAllBytes(inputStream);
         } catch (IOException e) {

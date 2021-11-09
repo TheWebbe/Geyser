@@ -122,7 +122,6 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
                     data.setPackVersion(packID[1]);
                     data.setPremium(false);
                     data.setType(ResourcePackType.RESOURCE);
-
                     session.sendUpstreamPacket(data);
                 }
                 break;
@@ -138,7 +137,7 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
                     stackPacket.getResourcePacks().add(new ResourcePackStackPacket.Entry(header.getUuid().toString(), header.getVersionString(), ""));
                 }
 
-                if (session.getItemMappings().getFurnaceMinecartData() != null) {
+                if (session.getItemMappings().getFurnaceMinecartData() != null || GeyserConnector.getInstance().getConfig().isConvertResourcePack()) {
                     // Allow custom items to work
                     stackPacket.getExperiments().add(new ExperimentData("data_driven_items", true));
                 }

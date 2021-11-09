@@ -29,6 +29,8 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.geysermc.connector.registry.loader.RegistryLoader;
 
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**

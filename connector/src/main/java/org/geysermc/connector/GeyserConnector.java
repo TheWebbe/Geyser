@@ -147,8 +147,9 @@ public class GeyserConnector {
 
         logger.setDebug(config.isDebugMode());
 
+        /* Load packs, they have to be loaded before registries because they convert java resource packs */
+        ResourcePack.loadPacks();
         PacketTranslatorRegistry.init();
-
         /* Initialize translators and registries */
         BlockRegistries.init();
         Registries.init();
@@ -158,7 +159,6 @@ public class GeyserConnector {
         LocaleUtils.init();
         ScoreboardUpdater.init();
 
-        ResourcePack.loadPacks();
 
         if (platformType != PlatformType.STANDALONE && config.getRemote().getAddress().equals("auto")) {
             // Set the remote address to localhost since that is where we are always connecting
@@ -429,6 +429,7 @@ public class GeyserConnector {
             }
         }
 
+        ResourcePack.saveCache();
         generalThreadPool.shutdown();
         bedrockServer.close();
         if (timeSyncer != null) {
