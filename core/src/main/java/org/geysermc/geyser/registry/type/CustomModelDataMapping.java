@@ -23,14 +23,18 @@
  * @link https://github.com/GeyserMC/Geyser
  */
 
-package org.geysermc.geyser.entity.factory;
+package org.geysermc.connector.registry.type;
 
-import com.nukkitx.math.vector.Vector3f;
-import org.geysermc.geyser.entity.type.ExpOrbEntity;
-import org.geysermc.geyser.session.GeyserSession;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
 
-@FunctionalInterface
-public interface ExperienceOrbEntityFactory extends EntityFactory<ExpOrbEntity> {
+@SuppressWarnings("FieldMayBeFinal") // Jackson requires that the fields are not final
+public class CustomModelDataMapping {
+    @Getter
+    @JsonProperty("custom_model_data")
+    private int customModelData = 0;
 
-    ExpOrbEntity create(GeyserSession session, int amount, long entityId, long geyserId, Vector3f position);
+    @Getter
+    @JsonProperty("item")
+    private String bedrockItem = "";
 }

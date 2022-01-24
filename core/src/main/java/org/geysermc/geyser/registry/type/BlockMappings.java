@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 GeyserMC. http://geysermc.org
+ * Copyright (c) 2019-2022 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,9 +29,11 @@ import com.nukkitx.nbt.NbtList;
 import com.nukkitx.nbt.NbtMap;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.Builder;
 import lombok.Value;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Builder
@@ -46,7 +48,8 @@ public class BlockMappings {
     int[] javaToBedrockBlocks;
 
     NbtList<NbtMap> bedrockBlockStates;
-
+    Object2IntMap<String> bedrockIdentifierToRuntimeId;
+    Map<String, NbtMap> bedrockIdentifierToNbt;
     /**
      * Contains a map of Java blocks to their respective Bedrock block tag, if the Java identifier is different from Bedrock.
      * Required to fix villager trades with these blocks.

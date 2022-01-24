@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 GeyserMC. http://geysermc.org
+ * Copyright (c) 2019-2022 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,11 +25,14 @@
 
 package org.geysermc.geyser.registry.populator;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import com.nukkitx.nbt.*;
 import com.nukkitx.protocol.bedrock.v465.Bedrock_v465;
 import com.nukkitx.protocol.bedrock.v471.Bedrock_v471;
+import it.unimi.dsi.fastutil.Pair;
+import it.unimi.dsi.fastutil.ints.IntObjectImmutablePair;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -43,14 +46,23 @@ import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.registry.type.BlockMapping;
 import org.geysermc.geyser.registry.type.BlockMappings;
 import org.geysermc.geyser.util.BlockUtils;
-import org.geysermc.geyser.util.FileUtils;
 
 import java.io.DataInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+<<<<<<< HEAD:connector/src/main/java/org/geysermc/connector/registry/populator/BlockRegistryPopulator.java
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+=======
+import java.util.*;
+>>>>>>> f682cf1326775734f3c9289c8c488e4cd0c82a55:core/src/main/java/org/geysermc/geyser/registry/populator/BlockRegistryPopulator.java
 import java.util.function.BiFunction;
 import java.util.zip.GZIPInputStream;
 
@@ -83,9 +95,9 @@ public class BlockRegistryPopulator {
 
     private static void registerBedrockBlocks() {
         for (Map.Entry<ObjectIntPair<String>, BiFunction<String, NbtMapBuilder, String>> palette : BLOCK_MAPPERS.entrySet()) {
-            InputStream stream = FileUtils.getResource(String.format("bedrock/block_palette.%s.nbt", palette.getKey().key()));
             NbtList<NbtMap> blocksTag;
-            try (NBTInputStream nbtInputStream = new NBTInputStream(new DataInputStream(new GZIPInputStream(stream)), true, true)) {
+            try (InputStream stream = GeyserImpl.getInstance().getBootstrap().getResource(String.format("bedrock/block_palette.%s.nbt", palette.getKey().key()));
+                 NBTInputStream nbtInputStream = new NBTInputStream(new DataInputStream(new GZIPInputStream(stream)), true, true)) {
                 NbtMap blockPalette = (NbtMap) nbtInputStream.readTag();
                 blocksTag = (NbtList<NbtMap>) blockPalette.getList("blocks", NbtType.COMPOUND);
             } catch (Exception e) {
@@ -95,6 +107,8 @@ public class BlockRegistryPopulator {
             // New since 1.16.100 - find the block runtime ID by the order given to us in the block palette,
             // as we no longer send a block palette
             Object2IntMap<NbtMap> blockStateOrderedMap = new Object2IntOpenHashMap<>(blocksTag.size());
+//            Object2IntMap<String> customBlocksIdentifierToRuntimeId = new Object2IntOpenHashMap<>();
+//            Map<String, NbtMap> customBlocksIdentifierNbtMap = new HashMap<>();
 
             int stateVersion = -1;
             for (int i = 0; i < blocksTag.size(); i++) {
@@ -168,6 +182,77 @@ public class BlockRegistryPopulator {
                 javaToBedrockBlocks[javaRuntimeId] = bedrockRuntimeId;
             }
 
+//            if (GeyserConnector.getInstance().getConfig().isConvertResourcePack()) {
+//                File cmdMappingsDirectory = GeyserConnector.getInstance().getBootstrap().getConfigFolder().resolve("packs/mappings").toFile();
+//                if (!cmdMappingsDirectory.exists()) {
+//                    cmdMappingsDirectory.mkdirs();
+//                }
+//
+//                for (File cmdMappingFile : cmdMappingsDirectory.listFiles((dir, name) -> name.endsWith(".json"))) {
+//                    try {
+//                        JsonNode resourcePackMappingsRoot = GeyserConnector.JSON_MAPPER.readTree(cmdMappingFile);
+//                        String namespace = resourcePackMappingsRoot.get("namespace").asText();
+//                        JsonNode mappingsDataNode = resourcePackMappingsRoot.get("mappings_data").get("items").get("3d");
+//                        Map<String, List<Pair<Integer, String>>> mappingsData = new HashMap<>();
+//
+//                        if (mappingsDataNode != null && mappingsDataNode.isObject()) {
+//                            mappingsDataNode.fields().forEachRemaining(entry -> {
+//                                if (entry.getValue().isObject()) {
+//                                    if (!mappingsData.containsKey(entry.getKey())) mappingsData.put(entry.getKey(), new ArrayList<>());
+//                                    entry.getValue().fields().forEachRemaining(cmd2item -> {
+//                                        mappingsData.get(entry.getKey()).add(new IntObjectImmutablePair<>(Integer.parseInt(cmd2item.getKey()), cmd2item.getValue().asText()));
+//                                    });
+//                                }
+//                            });
+//                        }
+//
+//                        Map<String, NbtMap> sortedCustomItems = new TreeMap<>();
+//
+//                        for (Map.Entry<String, List<Pair<Integer, String>>> entry : mappingsData.entrySet()) {
+//                            for (Pair<Integer, String> pair : entry.getValue()) {
+//                                String identifier = namespace + ":zzz" + pair.value();
+//
+//                                NbtMapBuilder componentBuilder = NbtMap.builder();
+////                                componentBuilder.putCompound("minecraft:entity_collision", NbtMap.builder()
+////                                        .putBoolean("enabled", false)
+////                                        .putList("origin", NbtType.FLOAT, -8f, 0f, -8f)
+////                                        .putList("size", NbtType.FLOAT, 16f, 16f, 16f).build()
+////                                );
+//
+//                                componentBuilder.putCompound("minecraft:material_instances", NbtMap.builder()
+//                                        .putCompound("*", NbtMap.builder()
+//                                                .putString("texture", pair.value()).build()
+////                                                .putString("render_method", "opaque").build()
+//////                                                .putBoolean("face_dimming", false)
+//////                                                .putBoolean("ambient_occlusion", false).build()
+//                                        ).build()
+//                                );
+////
+////                                componentBuilder.putCompound("tag:geysermc:" + pair.value(), NbtMap.EMPTY);
+//                                componentBuilder.putString("minecraft:geometry", "geometry." + pair.value());
+////                                componentBuilder.putCompound("minecraft:placement_filter", NbtMap.builder()
+////                                        .putList("conditions", NbtType.COMPOUND, NbtMap.builder()
+////                                                .putList("allowed_faces", NbtType.STRING)
+////                                                .putList("block_filter", NbtType.STRING).build()
+////                                        ).build()
+////                                ).build();
+//
+//                                sortedCustomItems.put(identifier, NbtMap.builder().putCompound("components", componentBuilder.build()).build());
+//                            }
+//
+//                            for (Map.Entry<String, NbtMap> sortedItem : sortedCustomItems.entrySet()) {
+//                                blockStateOrderedMap.put(sortedItem.getValue(), blockStateOrderedMap.size());
+//                                customBlocksIdentifierNbtMap.put(sortedItem.getKey(), sortedItem.getValue());
+//                                customBlocksIdentifierToRuntimeId.put(sortedItem.getKey(), blockStateOrderedMap.getInt(sortedItem.getValue()));
+//                            }
+//                        }
+//
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+
             if (commandBlockRuntimeId == -1) {
                 throw new AssertionError("Unable to find command block in palette");
             }
@@ -203,15 +288,15 @@ public class BlockRegistryPopulator {
                     .itemFrames(itemFrames)
                     .flowerPotBlocks(flowerPotBlocks)
                     .jigsawStateIds(jigsawStateIds)
+//                    .bedrockIdentifierToRuntimeId(customBlocksIdentifierToRuntimeId)
+//                    .bedrockIdentifierToNbt(customBlocksIdentifierNbtMap)
                     .build());
         }
     }
 
     private static void registerJavaBlocks() {
-        InputStream stream = FileUtils.getResource("mappings/blocks.json");
-
         JsonNode blocksJson;
-        try {
+        try (InputStream stream = GeyserImpl.getInstance().getBootstrap().getResource("mappings/blocks.json")) {
             blocksJson = GeyserImpl.JSON_MAPPER.readTree(stream);
         } catch (Exception e) {
             throw new AssertionError("Unable to load Java block mappings", e);
@@ -219,7 +304,7 @@ public class BlockRegistryPopulator {
 
         BlockRegistries.JAVA_BLOCKS.set(new BlockMapping[blocksJson.size()]); // Set array size to number of blockstates
 
-        Set<String> cleanIdentifiers = new HashSet<>();
+        Deque<String> cleanIdentifiers = new ArrayDeque<>();
 
         int javaRuntimeId = -1;
         int bellBlockId = -1;
@@ -284,7 +369,7 @@ public class BlockRegistryPopulator {
             String cleanJavaIdentifier = BlockUtils.getCleanIdentifier(entry.getKey());
             String bedrockIdentifier = entry.getValue().get("bedrock_identifier").asText();
 
-            if (!cleanIdentifiers.contains(cleanJavaIdentifier)) {
+            if (!cleanJavaIdentifier.equals(cleanIdentifiers.peekLast())) {
                 uniqueJavaId++;
                 cleanIdentifiers.add(cleanJavaIdentifier.intern());
             }
@@ -362,6 +447,8 @@ public class BlockRegistryPopulator {
             throw new AssertionError("Unable to find Java water in palette");
         }
         BlockStateValues.JAVA_WATER_ID = waterRuntimeId;
+
+        BlockRegistries.CLEAN_JAVA_IDENTIFIERS.set(cleanIdentifiers.toArray(new String[0]));
 
         BLOCKS_JSON = blocksJson;
     }

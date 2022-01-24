@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 GeyserMC. http://geysermc.org
+ * Copyright (c) 2019-2022 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,6 +41,7 @@ import com.nukkitx.protocol.bedrock.data.inventory.stackrequestactions.*;
 import com.nukkitx.protocol.bedrock.packet.ItemStackResponsePacket;
 import it.unimi.dsi.fastutil.ints.*;
 import lombok.AllArgsConstructor;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.inventory.CartographyContainer;
 import org.geysermc.geyser.inventory.GeyserItemStack;
@@ -65,11 +66,8 @@ import java.util.*;
 public abstract class InventoryTranslator {
 
     public static final InventoryTranslator PLAYER_INVENTORY_TRANSLATOR = new PlayerInventoryTranslator();
-    public static final Map<ContainerType, InventoryTranslator> INVENTORY_TRANSLATORS = new HashMap<>() {
+    private static final Map<ContainerType, InventoryTranslator> INVENTORY_TRANSLATORS = new EnumMap<>(ContainerType.class) {
         {
-            /* Player Inventory */
-            put(null, PLAYER_INVENTORY_TRANSLATOR);
-
             /* Chest UIs */
             put(ContainerType.GENERIC_9X1, new SingleChestInventoryTranslator(9));
             put(ContainerType.GENERIC_9X2, new SingleChestInventoryTranslator(18));
@@ -129,7 +127,7 @@ public abstract class InventoryTranslator {
      *
      * @return true if this transfer should be rejected
      */
-    public boolean shouldRejectItemPlace(GeyserSession session, Inventory inventory, ContainerSlotType bedrockSourceContainer,
+    protected boolean shouldRejectItemPlace(GeyserSession session, Inventory inventory, ContainerSlotType bedrockSourceContainer,
                                          int javaSourceSlot, ContainerSlotType bedrockDestinationContainer, int javaDestinationSlot) {
         return false;
     }
@@ -138,7 +136,7 @@ public abstract class InventoryTranslator {
      * Should be overrided if this request matches a certain criteria and shouldn't be treated normally.
      * E.G. anvil renaming or enchanting
      */
-    public boolean shouldHandleRequestFirst(StackRequestActionData action, Inventory inventory) {
+    protected boolean shouldHandleRequestFirst(StackRequestActionData action, Inventory inventory) {
         return false;
     }
 
@@ -186,6 +184,9 @@ public abstract class InventoryTranslator {
             InventoryUtils.updateCursor(session);
             updateInventory(session, inventory);
         }
+
+        // We're done with our batch of inventory requests so this hack should be reset
+        inventory.resetNextStateId();
     }
 
     public ItemStackResponsePacket.Response translateRequest(GeyserSession session, Inventory inventory, ItemStackRequest request) {
@@ -287,24 +288,36 @@ public abstract class InventoryTranslator {
                 }
                 case SWAP: {
                     SwapStackRequestActionData swapAction = (SwapStackRequestActionData) action;
-                    if (!(checkNetId(session, inventory, swapAction.getSource()) && checkNetId(session, inventory, swapAction.getDestination()))) {
+                    StackRequestSlotInfoData source = swapAction.getSource();
+                    StackRequestSlotInfoData destination = swapAction.getDestination();
+
+                    if (!(checkNetId(session, inventory, source) && checkNetId(session, inventory, destination))) {
                         if (session.getGeyser().getConfig().isDebugMode()) {
                             session.getGeyser().getLogger().error("DEBUG: About to reject SWAP request made by " + session.name());
-                            dumpStackRequestDetails(session, inventory, swapAction.getSource(), swapAction.getDestination());
+                            dumpStackRequestDetails(session, inventory, source, destination);
                         }
                         return rejectRequest(request);
                     }
 
-                    int sourceSlot = bedrockSlotToJava(swapAction.getSource());
-                    int destSlot = bedrockSlotToJava(swapAction.getDestination());
-                    boolean isSourceCursor = isCursor(swapAction.getSource());
-                    boolean isDestCursor = isCursor(swapAction.getDestination());
+                    int sourceSlot = bedrockSlotToJava(source);
+                    int destSlot = bedrockSlotToJava(destination);
+                    boolean isSourceCursor = isCursor(source);
+                    boolean isDestCursor = isCursor(destination);
 
-                    if (shouldRejectItemPlace(session, inventory, swapAction.getSource().getContainer(),
+                    if (shouldRejectItemPlace(session, inventory, source.getContainer(),
                             isSourceCursor ? -1 : sourceSlot,
-                            swapAction.getDestination().getContainer(), isDestCursor ? -1 : destSlot)) {
+                            destination.getContainer(), isDestCursor ? -1 : destSlot)) {
                         // This item would not be here in Java
                         return rejectRequest(request, false);
+                    }
+
+                    if (!isSourceCursor && destination.getContainer() == ContainerSlotType.HOTBAR || destination.getContainer() == ContainerSlotType.HOTBAR_AND_INVENTORY) {
+                        // Tell the server we're pressing one of the hotbar keys to save clicks
+                        Click click = InventoryUtils.getClickForHotbarSwap(destination.getSlot());
+                        if (click != null) {
+                            plan.add(click, sourceSlot);
+                            break;
+                        }
                     }
 
                     if (isSourceCursor && isDestCursor) { //???
@@ -393,6 +406,7 @@ public abstract class InventoryTranslator {
                     }
                     break;
                 }
+                case CRAFT_RECIPE: // Called by stonecutters 1.18+
                 case CRAFT_RECIPE_AUTO: // Called by villagers
                 case CRAFT_NON_IMPLEMENTED_DEPRECATED: // Tends to be called for UI inventories
                 case CRAFT_RESULTS_DEPRECATED: // Tends to be called for UI inventories
@@ -839,8 +853,8 @@ public abstract class InventoryTranslator {
         Map<ContainerSlotType, List<ItemStackResponsePacket.ItemEntry>> containerMap = new HashMap<>();
         for (int slot : affectedSlots) {
             BedrockContainerSlot bedrockSlot = javaSlotToBedrockContainer(slot);
-            List<ItemStackResponsePacket.ItemEntry> list = containerMap.computeIfAbsent(bedrockSlot.getContainer(), k -> new ArrayList<>());
-            list.add(makeItemEntry(session, bedrockSlot.getSlot(), inventory.getItem(slot)));
+            List<ItemStackResponsePacket.ItemEntry> list = containerMap.computeIfAbsent(bedrockSlot.container(), k -> new ArrayList<>());
+            list.add(makeItemEntry(session, bedrockSlot.slot(), inventory.getItem(slot)));
         }
 
         List<ItemStackResponsePacket.ContainerEntry> containerEntries = new ArrayList<>();
@@ -876,6 +890,22 @@ public abstract class InventoryTranslator {
 
     protected static boolean isCursor(StackRequestSlotInfoData slotInfoData) {
         return slotInfoData.getContainer() == ContainerSlotType.CURSOR;
+    }
+
+    /**
+     * Gets the {@link InventoryTranslator} for the given {@link ContainerType}.
+     * Returns {@link #PLAYER_INVENTORY_TRANSLATOR} if type is null.
+     *
+     * @param type the type
+     * @return the InventoryType for the given ContainerType.
+     */
+    @Nullable
+    public static InventoryTranslator inventoryTranslator(@Nullable ContainerType type) {
+        if (type == null) {
+            return PLAYER_INVENTORY_TRANSLATOR;
+        }
+
+        return INVENTORY_TRANSLATORS.get(type);
     }
 
     protected enum CraftState {

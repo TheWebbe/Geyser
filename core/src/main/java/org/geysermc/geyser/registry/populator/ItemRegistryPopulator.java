@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 GeyserMC. http://geysermc.org
+ * Copyright (c) 2019-2022 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,23 +31,44 @@ import com.nukkitx.nbt.NbtMap;
 import com.nukkitx.nbt.NbtMapBuilder;
 import com.nukkitx.nbt.NbtType;
 import com.nukkitx.nbt.NbtUtils;
+import com.nukkitx.protocol.bedrock.data.BlockPropertyData;
 import com.nukkitx.protocol.bedrock.data.SoundEvent;
 import com.nukkitx.protocol.bedrock.data.inventory.ComponentItemData;
 import com.nukkitx.protocol.bedrock.data.inventory.ItemData;
 import com.nukkitx.protocol.bedrock.packet.StartGamePacket;
 import com.nukkitx.protocol.bedrock.v465.Bedrock_v465;
 import com.nukkitx.protocol.bedrock.v471.Bedrock_v471;
+<<<<<<< HEAD:connector/src/main/java/org/geysermc/connector/registry/populator/ItemRegistryPopulator.java
+import it.unimi.dsi.fastutil.Pair;
+=======
 import com.nukkitx.protocol.bedrock.v475.Bedrock_v475;
-import it.unimi.dsi.fastutil.ints.*;
+>>>>>>> f682cf1326775734f3c9289c8c488e4cd0c82a55:core/src/main/java/org/geysermc/geyser/registry/populator/ItemRegistryPopulator.java
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntObjectImmutablePair;
 import it.unimi.dsi.fastutil.objects.*;
+<<<<<<< HEAD:connector/src/main/java/org/geysermc/connector/registry/populator/ItemRegistryPopulator.java
+import org.geysermc.connector.GeyserConnector;
+import org.geysermc.connector.network.translators.item.StoredItemMappings;
+import org.geysermc.connector.registry.BlockRegistries;
+import org.geysermc.connector.registry.Registries;
+import org.geysermc.connector.registry.type.*;
+import org.geysermc.connector.utils.FileUtils;
+import org.geysermc.connector.utils.ImageUtils;
+=======
+import org.geysermc.geyser.GeyserBootstrap;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.inventory.item.StoredItemMappings;
 import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.registry.type.*;
-import org.geysermc.geyser.util.FileUtils;
+>>>>>>> f682cf1326775734f3c9289c8c488e4cd0c82a55:core/src/main/java/org/geysermc/geyser/registry/populator/ItemRegistryPopulator.java
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -69,13 +90,13 @@ public class ItemRegistryPopulator {
     }
 
     public static void populate() {
-        // Load item mappings from Java Edition to Bedrock Edition
-        InputStream stream = FileUtils.getResource("mappings/items.json");
+        GeyserBootstrap bootstrap = GeyserImpl.getInstance().getBootstrap();
 
         TypeReference<Map<String, GeyserMappingItem>> mappingItemsType = new TypeReference<>() { };
 
         Map<String, GeyserMappingItem> items;
-        try {
+        try (InputStream stream = bootstrap.getResource("mappings/items.json")) {
+            // Load item mappings from Java Edition to Bedrock Edition
             items = GeyserImpl.JSON_MAPPER.readValue(stream, mappingItemsType);
         } catch (Exception e) {
             throw new AssertionError("Unable to load Java runtime item IDs", e);
@@ -83,8 +104,6 @@ public class ItemRegistryPopulator {
 
         /* Load item palette */
         for (Map.Entry<String, PaletteVersion> palette : PALETTE_VERSIONS.entrySet()) {
-            stream = FileUtils.getResource(String.format("bedrock/runtime_item_states.%s.json", palette.getKey()));
-
             TypeReference<List<PaletteItem>> paletteEntriesType = new TypeReference<>() {};
 
             // Used to get the Bedrock namespaced ID (in instances where there are small differences)
@@ -94,7 +113,7 @@ public class ItemRegistryPopulator {
             List<String> itemNames = new ArrayList<>();
 
             List<PaletteItem> itemEntries;
-            try {
+            try (InputStream stream = bootstrap.getResource(String.format("bedrock/runtime_item_states.%s.json", palette.getKey()))) {
                 itemEntries = GeyserImpl.JSON_MAPPER.readValue(stream, paletteEntriesType);
             } catch (Exception e) {
                 throw new AssertionError("Unable to load Bedrock runtime item IDs", e);
@@ -112,10 +131,8 @@ public class ItemRegistryPopulator {
 
             // Load creative items
             // We load this before item mappings to get overridden block runtime ID mappings
-            stream = FileUtils.getResource(String.format("bedrock/creative_items.%s.json", palette.getKey()));
-
             JsonNode creativeItemEntries;
-            try {
+            try (InputStream stream = bootstrap.getResource(String.format("bedrock/creative_items.%s.json", palette.getKey()))) {
                 creativeItemEntries = GeyserImpl.JSON_MAPPER.readTree(stream).get("items");
             } catch (Exception e) {
                 throw new AssertionError("Unable to load creative items", e);
@@ -203,7 +220,13 @@ public class ItemRegistryPopulator {
 
             int itemIndex = 0;
             int javaFurnaceMinecartId = 0;
+<<<<<<< HEAD:connector/src/main/java/org/geysermc/connector/registry/populator/ItemRegistryPopulator.java
+            boolean usingFurnaceMinecart = GeyserConnector.getInstance().getConfig().isAddNonBedrockItems();
+            boolean usingCustomItems = GeyserConnector.getInstance().getConfig().isConvertResourcePack();
+            Object2IntMap<String> customItemJavaIds = new Object2IntOpenHashMap<>();
+=======
             boolean usingFurnaceMinecart = GeyserImpl.getInstance().getConfig().isAddNonBedrockItems();
+>>>>>>> f682cf1326775734f3c9289c8c488e4cd0c82a55:core/src/main/java/org/geysermc/geyser/registry/populator/ItemRegistryPopulator.java
 
             Set<String> javaOnlyItems = new ObjectOpenHashSet<>();
             Collections.addAll(javaOnlyItems, "minecraft:spectral_arrow", "minecraft:debug_stick",
@@ -234,6 +257,7 @@ public class ItemRegistryPopulator {
                     itemIndex++;
                     continue;
                 }
+
                 String bedrockIdentifier = mappingItem.getBedrockIdentifier().intern();
                 int bedrockId = bedrockIdentifierToId.getInt(bedrockIdentifier);
                 if (bedrockId == Short.MIN_VALUE) {
@@ -443,7 +467,7 @@ public class ItemRegistryPopulator {
                 entries.put("geysermc:furnace_minecart", new StartGamePacket.ItemEntry("geysermc:furnace_minecart", (short) furnaceMinecartId, true));
 
                 mappings.put(javaFurnaceMinecartId, ItemMapping.builder()
-                        .javaIdentifier("geysermc:furnace_minecart")
+                        .javaIdentifier("minecraft:furnace_minecart")
                         .bedrockIdentifier("geysermc:furnace_minecart")
                         .javaId(javaFurnaceMinecartId)
                         .bedrockId(furnaceMinecartId)
@@ -492,6 +516,189 @@ public class ItemRegistryPopulator {
                 furnaceMinecartData = new ComponentItemData("geysermc:furnace_minecart", builder.build());
             }
 
+            Map<String, Integer> customItems = new HashMap<>();
+
+            List<ComponentItemData> customItemsComponents = new ArrayList<>();
+            Int2ObjectMap<BlockPropertyData> custom3dItems = new Int2ObjectOpenHashMap<>();
+
+            if (usingCustomItems) {
+                File cmdMappingsDirectory = GeyserConnector.getInstance().getBootstrap().getConfigFolder().resolve("packs/mappings").toFile();
+                if (!cmdMappingsDirectory.exists()) {
+                    cmdMappingsDirectory.mkdirs();
+                }
+
+                for (File cmdMappingFile: cmdMappingsDirectory.listFiles((dir, name) -> name.endsWith(".json"))) {
+                    try {
+                        JsonNode resourcePackMappingsRoot = GeyserConnector.JSON_MAPPER.readTree(cmdMappingFile);
+                        JsonNode textureDimensionsNode = resourcePackMappingsRoot.get("texture_dimensions");
+                        JsonNode mappingsDataNode = resourcePackMappingsRoot.get("mappings_data").get("items");
+                        JsonNode mappingsData2dNode = mappingsDataNode.get("2d");
+                        JsonNode mappingsData3dNode = mappingsDataNode.get("3d");
+
+                        Map<String, int[]> textureDimensions = new HashMap<>();
+                        Map<String, List<Pair<Integer, String>>> mappingsData2d = new HashMap<>();
+                        Map<String, List<Pair<Integer, String>>> mappingsData3d = new TreeMap<>();
+
+                        if (textureDimensionsNode != null && textureDimensionsNode.isObject()) {
+                            textureDimensionsNode.fields().forEachRemaining(entry -> {
+                                if (entry.getValue().isArray()) {
+                                    textureDimensions.put(entry.getKey(), new int[] {entry.getValue().get(0).asInt(), entry.getValue().get(1).asInt()});
+                                }
+                            });
+                        }
+
+                        if (mappingsData2dNode != null && mappingsData2dNode.isObject()) {
+                            mappingsData2dNode.fields().forEachRemaining(entry -> {
+                                if (entry.getValue().isObject()) {
+                                    mappingsData2d.put(entry.getKey(), new ArrayList<>());
+                                    entry.getValue().fields().forEachRemaining(cmd2item -> {
+                                        mappingsData2d.get(entry.getKey()).add(new IntObjectImmutablePair<>(Integer.parseInt(cmd2item.getKey()), cmd2item.getValue().asText()));
+                                    });
+                                }
+                            });
+                        }
+                        if (mappingsData3dNode != null && mappingsData3dNode.isObject()) {
+                            mappingsData3dNode.fields().forEachRemaining(entry -> {
+                                if (entry.getValue().isObject()) {
+                                    mappingsData3d.put(entry.getKey(), new ArrayList<>());
+                                    entry.getValue().fields().forEachRemaining(cmd2item -> {
+                                        mappingsData3d.get(entry.getKey()).add(new IntObjectImmutablePair<>(Integer.parseInt(cmd2item.getKey()), cmd2item.getValue().asText()));
+                                    });
+                                }
+                            });
+                        }
+
+                        for (Map.Entry<String, List<Pair<Integer, String>>> entry : mappingsData2d.entrySet()) {
+                            String javaIdentifier = entry.getKey();
+                            ItemMapping javaItem = identifierToMapping.get(javaIdentifier);
+                            if (javaItem == null) continue;
+                            int javaCustomItemId = javaItem.getJavaId();
+                            for (Pair<Integer, String> cmdMapping : entry.getValue()) {
+                                int customItemId = mappings.size() + 1;
+
+                                if (customItems.containsKey(cmdMapping.value())) {
+                                    javaItem.getCustomModelData().put(cmdMapping.key().intValue(), customItems.get(cmdMapping.value()).intValue());
+                                    continue;
+                                }
+
+                                ComponentItemData customItemData;
+                                String customItemName = String.format("geysermc:%s", cmdMapping.value());
+                                entries.put(customItemName, new StartGamePacket.ItemEntry(customItemName, (short) customItemId, true));
+
+                                mappings.put(customItemId, ItemMapping.builder()
+                                        .javaIdentifier(javaIdentifier)
+                                        .bedrockIdentifier(customItemName)
+                                        .javaId(javaCustomItemId)
+                                        .bedrockId(customItemId)
+                                        .bedrockData(0)
+                                        .bedrockBlockId(-1)
+                                        .stackSize(javaItem.getStackSize())
+                                        .build());
+
+                                NbtMapBuilder builder = NbtMap.builder();
+                                builder.putString("name", customItemName)
+                                        .putInt("id", customItemId);
+
+                                NbtMapBuilder itemProperties = NbtMap.builder();
+
+                                NbtMapBuilder componentBuilder = NbtMap.builder();
+                                // Conveniently, as of 1.16.200, the furnace minecart has a texture AND translation string already.
+                                // 1.17.30 moves the icon to the item properties section
+                                (palette.getValue().protocolVersion() >= Bedrock_v465.V465_CODEC.getProtocolVersion() ?
+                                        itemProperties : componentBuilder).putCompound("minecraft:icon", NbtMap.builder()
+                                        .putString("texture", cmdMapping.value())
+                                        .putString("frame", "0.000000")
+                                        .putInt("frame_version", 1)
+                                        .putString("legacy_id", "").build());
+                                componentBuilder.putCompound("minecraft:display_name", NbtMap.builder().putString("value", cmdMapping.value()).build());
+
+                                // Indicate that the arm animation should play on rails
+//                                componentBuilder.putCompound("minecraft:render_offsets", ImageUtils.getRenderOffsets(textureDimensions.get(cmdMapping.value())[0], textureDimensions.get(cmdMapping.value())[1]));
+//                                componentBuilder.putFloat("mining_speed", 10f);
+
+                                // We always want to allow offhand usage when we can - matches Java Edition
+                                itemProperties.putBoolean("allow_off_hand", true);
+                                itemProperties.putBoolean("hand_equipped", javaItem.isTool());
+                                itemProperties.putInt("max_stack_size", javaItem.getStackSize());
+                                itemProperties.putInt("creative_category", 4); // 4 - "Items"
+
+                                componentBuilder.putCompound("item_properties", itemProperties.build());
+                                builder.putCompound("components", componentBuilder.build());
+
+                                customItemData = new ComponentItemData(customItemName, builder.build());
+                                customItems.put(cmdMapping.value(), customItemId);
+                                customItemsComponents.add(customItemData);
+                                javaItem.getCustomModelData().put(cmdMapping.key().intValue(), customItemId);
+                            }
+                        }
+
+                        int customBlockId = BlockRegistries.BLOCKS.forVersion(palette.getValue().protocolVersion()).getJavaToBedrockBlocks().length;
+                        for (Map.Entry<String, List<Pair<Integer, String>>> entry : mappingsData3d.entrySet()) {
+                            String javaIdentifier = entry.getKey();
+                            ItemMapping javaItem = identifierToMapping.get(javaIdentifier);
+                            if (javaItem == null) continue;
+                            int javaCustomItemId = javaItem.getJavaId();
+                            for (Pair<Integer, String> pair : entry.getValue()) {
+                                int customItemId = mappings.size() + 1;
+
+                                if (customItems.containsKey(pair.value())) {
+                                    javaItem.getCustomModelData().put(pair.key().intValue(), customItems.get(pair.value()).intValue());
+                                    continue;
+                                }
+
+                                String customItemName = String.format("geysermc:zzzzz%s", pair.value());
+                                entries.put(customItemName, new StartGamePacket.ItemEntry(customItemName, (short) customItemId, false));
+
+                                custom3dItems.put(customBlockId, new BlockPropertyData(customItemName, NbtMap.builder()
+                                        .putCompound("components", NbtMap.builder()
+                                                .putCompound("minecraft:entity_collision", NbtMap.builder()
+                                                        .putBoolean("enabled", false)
+                                                        .putList("origin", NbtType.FLOAT, -8f, 0f, -8f)
+                                                        .putList("size", NbtType.FLOAT, 16f, 16f, 16f).build())
+                                                .putCompound("minecraft:geometry", NbtMap.builder()
+                                                        .putString("value", "geometry." + pair.value()).build()
+                                                )
+                                                .putCompound("minecraft:material_instances", NbtMap.builder()
+                                                        .putCompound("mappings", NbtMap.EMPTY)
+                                                        .putCompound("materials", NbtMap.builder()
+                                                                .putCompound("*", NbtMap.builder()
+                                                                        .putBoolean("ambient_occlusion", false)
+                                                                        .putBoolean("face_dimming", false)
+                                                                        .putString("texture", pair.value())
+                                                                        .putString("render_method", "opaque").build()
+                                                                ).build()
+                                                        ).build()
+                                                ).build())
+                                                .putCompound("minecraft:placement_filter", NbtMap.builder()
+                                                        .putList("conditions", NbtType.COMPOUND, NbtMap.builder()
+                                                            .putBoolean("allowed_faces", false)
+                                                            .putList("block_filter", NbtType.STRING).build()
+                                                        ).build()
+                                                )
+                                        .build())
+                                );
+
+                                mappings.put(customItemId, ItemMapping.builder()
+                                        .javaIdentifier(javaIdentifier)
+                                        .bedrockIdentifier(customItemName)
+                                        .javaId(javaCustomItemId)
+                                        .bedrockId(customItemId)
+                                        .bedrockData(0)
+                                        .bedrockBlockId(customBlockId)
+                                        .stackSize(javaItem.getStackSize())
+                                        .build());
+
+                                customItems.put(pair.value(), customItemId);
+                                javaItem.getCustomModelData().put(pair.key().intValue(), customItemId);
+                                customBlockId++;
+                            }
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
             ItemMappings itemMappings = ItemMappings.builder()
                     .items(mappings)
                     .creativeItems(creativeItems.toArray(new ItemData[0]))
@@ -504,6 +711,8 @@ public class ItemRegistryPopulator {
                     .spawnEggIds(spawnEggs)
                     .carpets(carpets)
                     .furnaceMinecartData(furnaceMinecartData)
+                    .customItemsData(customItemsComponents)
+                    .custom3dItems(custom3dItems)
                     .build();
 
             Registries.ITEMS.register(palette.getValue().protocolVersion(), itemMappings);

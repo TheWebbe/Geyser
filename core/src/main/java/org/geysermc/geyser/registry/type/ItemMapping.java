@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 GeyserMC. http://geysermc.org
+ * Copyright (c) 2019-2022 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,10 @@
 
 package org.geysermc.geyser.registry.type;
 
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -58,6 +62,8 @@ public class ItemMapping {
     String toolTier;
 
     String translationString;
+    Int2IntMap customModelData = new Int2IntOpenHashMap();
+    Int2ObjectMap<String> customModelData2BedrockIdentifier = new Int2ObjectOpenHashMap<>();
 
     int maxDamage;
 

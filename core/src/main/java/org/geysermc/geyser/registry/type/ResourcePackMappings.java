@@ -23,17 +23,44 @@
  * @link https://github.com/GeyserMC/Geyser
  */
 
-package org.geysermc.geyser.entity.factory;
+package org.geysermc.connector.registry.type;
 
-import com.nukkitx.math.vector.Vector3f;
-import org.geysermc.geyser.entity.type.Entity;
-import org.geysermc.geyser.entity.EntityDefinition;
-import org.geysermc.geyser.session.GeyserSession;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
 
-import java.util.UUID;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-@FunctionalInterface
-public interface BaseEntityFactory<T extends Entity> extends EntityFactory<T> {
+@SuppressWarnings("FieldMayBeFinal") // Jackson requires that the fields are not final
+public class ResourcePackMappings {
+    @Getter
+    @JsonProperty("java_pack_format_version")
+    private int javaPackFormatVersion = 6;
 
-    T create(GeyserSession session, long javaId, long bedrockId, UUID uuid, EntityDefinition<?> definition, Vector3f position, Vector3f motion, float yaw, float pitch, float headYaw);
+    @Getter
+    @JsonProperty("java_pack_description")
+    private String javaPackDescription = "";
+
+    @Getter
+    @JsonProperty("converted_pack_description")
+    private String convertedPackDescription = "";
+
+    @Getter
+    @JsonProperty("converted_pack_uuid")
+    private String convertedPackUuid = "";
+
+    @Getter
+    @JsonProperty("converted_pack_version")
+    private int[] convertedPackVersion = {1, 0, 0};
+
+    @Getter
+    @JsonProperty("custom-model-data-items")
+    private Set<String> customModelDataItems = new HashSet<>();
+
+    @Getter
+    @JsonProperty("mappings_data")
+    private Map<String, List<CustomModelDataMapping>> mappings = new HashMap<>();
 }

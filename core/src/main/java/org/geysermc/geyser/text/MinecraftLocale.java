@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 GeyserMC. http://geysermc.org
+ * Copyright (c) 2019-2022 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -71,7 +71,7 @@ public class MinecraftLocale {
                 // Get the url for the latest version of the games manifest
                 String latestInfoURL = "";
                 for (Version version : versionManifest.getVersions()) {
-                    if (version.getId().equals(MinecraftProtocol.getJavaVersion())) {
+                    if (version.getId().equals(MinecraftProtocol.getJavaCodec().getMinecraftVersion())) {
                         latestInfoURL = version.getUrl();
                         break;
                     }
@@ -319,7 +319,7 @@ public class MinecraftLocale {
      * @param b Byte array to convert
      * @return The hex representation of the given byte array
      */
-    private static String byteArrayToHexString(byte[] b) {
+    public static String byteArrayToHexString(byte[] b) {
         StringBuilder result = new StringBuilder();
         for (byte value : b) {
             result.append(Integer.toString((value & 0xff) + 0x100, 16).substring(1));

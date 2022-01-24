@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 GeyserMC. http://geysermc.org
+ * Copyright (c) 2019-2022 GeyserMC. http://geysermc.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,10 +25,9 @@
 
 package org.geysermc.geyser.util;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.geysermc.geyser.GeyserBootstrap;
 import org.geysermc.geyser.GeyserImpl;
 
 import java.io.*;
@@ -58,26 +57,9 @@ public class FileUtils {
         return objectMapper.readValue(src, valueType);
     }
 
-    public static <T> T loadYaml(InputStream src, Class<T> valueType) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory()).enable(JsonParser.Feature.IGNORE_UNDEFINED).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        return objectMapper.readValue(src, valueType);
-    }
-
     public static <T> T loadJson(InputStream src, Class<T> valueType) throws IOException {
         // Read specifically with UTF-8 to allow any non-UTF-encoded JSON to read
         return GeyserImpl.JSON_MAPPER.readValue(new InputStreamReader(src, StandardCharsets.UTF_8), valueType);
-    }
-
-    /**
-     * Open the specified file or copy if from resources
-     *
-     * @param name File and resource name
-     * @param fallback Formatting callback
-     * @return File handle of the specified file
-     * @throws IOException if the file failed to copy from resource
-     */
-    public static File fileOrCopiedFromResource(String name, Function<String, String> fallback) throws IOException {
-        return fileOrCopiedFromResource(new File(name), name, fallback);
     }
 
     /**
@@ -89,12 +71,12 @@ public class FileUtils {
      * @return File handle of the specified file
      * @throws IOException if the file failed to copy from resource
      */
-    public static File fileOrCopiedFromResource(File file, String name, Function<String, String> format) throws IOException {
+    public static File fileOrCopiedFromResource(File file, String name, Function<String, String> format, GeyserBootstrap bootstrap) throws IOException {
         if (!file.exists()) {
             //noinspection ResultOfMethodCallIgnored
             file.createNewFile();
             try (FileOutputStream fos = new FileOutputStream(file)) {
-                try (InputStream input = GeyserImpl.class.getResourceAsStream("/" + name)) { // resources need leading "/" prefix
+                try (InputStream input = bootstrap.getResource(name)) {
                     byte[] bytes = new byte[input.available()];
 
                     //noinspection ResultOfMethodCallIgnored
@@ -136,12 +118,51 @@ public class FileUtils {
     /**
      * Writes the given data to the specified file on disk
      *
+     * @param file File to write to
+     * @param data Data to write to the file
+     * @throws IOException if the file failed to write
+     */
+    public static void writeFile(File file, String data) throws IOException {
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+
+        try (FileWriter writer = new FileWriter(file)) {
+            try (BufferedWriter bufferedWriter = new BufferedWriter(writer)) {
+                bufferedWriter.write(data);
+                bufferedWriter.flush();
+            }
+        }
+    }
+
+    /**
+     * Writes the given data to the specified file on disk
+     *
      * @param name File path to write to
      * @param data Data to write to the file
      * @throws IOException if the file failed to write
      */
     public static void writeFile(String name, char[] data) throws IOException {
         writeFile(new File(name), data);
+    }
+
+    /**
+<<<<<<< HEAD:connector/src/main/java/org/geysermc/connector/utils/FileUtils.java
+     * Appends the given data to the specified file on disk
+     *
+     * @param file File to write to
+     * @param data Data to write to the file
+     * @throws IOException if the file failed to write
+     */
+    public static void appendFile(File file, String data) throws IOException {
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+
+        try (FileWriter writer = new FileWriter(file, true)) {
+            writer.write(data);
+            writer.flush();
+        }
     }
 
     /**
@@ -159,6 +180,8 @@ public class FileUtils {
     }
 
     /**
+=======
+>>>>>>> f682cf1326775734f3c9289c8c488e4cd0c82a55:core/src/main/java/org/geysermc/geyser/util/FileUtils.java
      * Calculate the SHA256 hash of a file
      *
      * @param file File to calculate the hash for
@@ -201,28 +224,30 @@ public class FileUtils {
      * @return The byte array of the file
      */
     public static byte[] readAllBytes(File file) {
+<<<<<<< HEAD:connector/src/main/java/org/geysermc/connector/utils/FileUtils.java
+        if (!file.exists()) {
+            return new byte[]{};
+        }
         try (InputStream inputStream = new FileInputStream(file)) {
             return readAllBytes(inputStream);
+=======
+        try (InputStream stream = new FileInputStream(file)) {
+            return stream.readAllBytes();
+>>>>>>> f682cf1326775734f3c9289c8c488e4cd0c82a55:core/src/main/java/org/geysermc/geyser/util/FileUtils.java
         } catch (IOException e) {
             throw new RuntimeException("Cannot read " + file);
         }
     }
 
     /**
-     * @param stream the InputStream to read off of
+     * @param resource the internal resource to read off from
      * @return the byte array of an InputStream
      */
-    public static byte[] readAllBytes(InputStream stream) {
-        try {
-            int size = stream.available();
-            byte[] bytes = new byte[size];
-            try (BufferedInputStream buf = new BufferedInputStream(stream)) {
-                //noinspection ResultOfMethodCallIgnored
-                buf.read(bytes, 0, bytes.length);
-            }
-            return bytes;
+    public static byte[] readAllBytes(String resource) {
+        try (InputStream stream = GeyserImpl.getInstance().getBootstrap().getResource(resource)) {
+            return stream.readAllBytes();
         } catch (IOException e) {
-            throw new RuntimeException("Error while trying to read input stream!", e);
+            throw new RuntimeException("Error while trying to read internal input stream!", e);
         }
     }
 
@@ -265,15 +290,18 @@ public class FileUtils {
      * @return a set of all the classes annotated by the given annotation
      */
     public static Set<Class<?>> getGeneratedClassesForAnnotation(String input) {
-        InputStream annotatedClass = FileUtils.getResource(input);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(annotatedClass));
-        return reader.lines().map(className -> {
-            try {
-                return Class.forName(className);
-            } catch (ClassNotFoundException ex) {
-                GeyserImpl.getInstance().getLogger().error("Failed to find class " + className, ex);
-                throw new RuntimeException(ex);
-            }
-        }).collect(Collectors.toSet());
+        try (InputStream annotatedClass = GeyserImpl.getInstance().getBootstrap().getResource(input);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(annotatedClass))) {
+            return reader.lines().map(className -> {
+                try {
+                    return Class.forName(className);
+                } catch (ClassNotFoundException ex) {
+                    GeyserImpl.getInstance().getLogger().error("Failed to find class " + className, ex);
+                    throw new RuntimeException(ex);
+                }
+            }).collect(Collectors.toSet());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
